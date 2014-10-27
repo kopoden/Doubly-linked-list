@@ -3,19 +3,15 @@
 
 #include "d_l_list_functions.h"
 
-int list_errno = OK;
+int list_ctor (List* L) {
 
-void list_ctor (List* L) {
-
-    list_errno = OK;
     L->first = (element*) calloc (1, sizeof(element*));
     L->last = (element*) calloc (1, sizeof(element*));
 
     if ((L->first == 0) || (L->last == 0)) {
         free(L->first);
         free(L->last);
-        list_errno = ERR_MEM;
-        return;
+        return ERR_MEM;
     }
 
     L->first->nxt = L->last;
@@ -27,167 +23,159 @@ void list_ctor (List* L) {
 
     L->ptr = L->first;
 
-    return;
+    return OK;
 }
 //============================================================================
 
 //============================================================================
-void inp_prvs (List* L, double value) {
+int inp_prvs (List* L, data_t value) {
 
-    list_errno = OK;
+    if (L->ptr == 0)
+        return SPOILT;
 
-    if (L->ptr->prvs == 0) {
-        list_errno = ERR_ACCESS;
-        return;
-    }
+    if (L->ptr->prvs == 0)
+        return ERR_ACCESS;
 
     element* buf = L->ptr->prvs;
     L->ptr->prvs = (element*) calloc (1, sizeof(element*));
 
-    if (L->ptr->prvs == 0) { //Not enough memory to allocate
-        L->ptr->prvs = buf;  // Go back to the previous state.
-        list_errno = ERR_MEM;
-        return;
+    if (L->ptr->prvs == 0) {
+        free(L->ptr->prvs);
+        return ERR_MEM;
     }
 
     L->ptr->prvs->prvs = buf;
     L->ptr->prvs->nxt = L->ptr;
     buf->nxt = L->ptr->prvs;
+
     //Assign value
     L->ptr->prvs->data = value;
-    return;
+
+    return OK;
 }
 //============================================================================
 
 //============================================================================
-void inp_nxt (List* L, data_t value) {
+int inp_nxt (List* L, data_t value) {
 
-    list_errno = OK;
+    if (L->ptr == 0)
+        return SPOILT;
 
-    if (L->ptr->nxt == 0) {
-        list_errno = ERR_ACCESS;
-    }
+    if (L->ptr->nxt == 0)
+        return ERR_ACCESS;
 
     element* buf = L->ptr->nxt;
     L->ptr->nxt = (element*) calloc (1, sizeof(element*));
 
-    if (L->ptr->nxt == 0) { //Not enough memory to allocate
-        L->ptr->nxt = buf;  //Go back to the previous state of list
-        list_errno = ERR_MEM;
-        return;
+    if (L->ptr->nxt == 0) {
+        free(L->ptr->nxt);
+        return ERR_MEM;
     }
+
     L->ptr->nxt->nxt = buf;
     L->ptr->nxt->prvs = L->ptr;
     buf->prvs = L->ptr->nxt;
     //Assign value
     L->ptr->nxt->data = value;
-    return;
+    return OK;
 }
 //============================================================================
 
 //============================================================================
-void extract (List* L, data_t* value) {
+int extract (List* L, data_t* value) {
 
-    list_errno = OK;
+    if (L->ptr == 0)
+        return SPOILT;
 
-    if (check_empty(L) == EMPTY) {
-        list_errno = EMPTY;
-        *value = TRASH;
-        return;
-    }
+    if ((L->ptr == L->first) || (L->ptr == L->last))
+        return ERR_ACCESS;
+
+    if (L->ptr->prvs == 0)
+        return SPOILT;
 
     *value = L->ptr->data;
     L->ptr->nxt->prvs = L->ptr->prvs;
     L->ptr->prvs->nxt = L->ptr->nxt;
+
     L->ptr = L->ptr->prvs;
 
-    return;
+    return OK;
 
 }
 //============================================================================
 
 //============================================================================
-void shft_ptr_nxt (List* L) {
-    list_errno = OK;
-    if (L->ptr->nxt == 0) {
-        list_errno = EMPTY_LINK;
-        return;
-    }
+int shft_ptr_nxt (List* L) {
+
+    if (L->ptr->nxt == 0)
+        return EMPTY_LINK;
+    if (L->ptr == 0)
+        return SPOILT;
 
     L->ptr = L->ptr->nxt;
-    return;
+    return OK;
 }
 //============================================================================
 
 //============================================================================
-void shft_ptr_prvs (List* L) {
-    list_errno = OK;
-    if (L->ptr->prvs == 0) {
-        list_errno = EMPTY_LINK;
-        return;
-    }
+int shft_ptr_prvs (List* L) {
+
+    if (L->ptr->prvs == 0)
+        return EMPTY_LINK;
+    if (L->ptr == 0)
+        return SPOILT;
 
     L->ptr = L->ptr->prvs;
-    return;
+    return OK;
 }
 //============================================================================
 
 //============================================================================
-void shft_to_first (List* L) {
+int shft_to_first (List* L) {
+
+    if (L->first == 0)
+        return SPOILT;
+
     L->ptr = L->first;
-    return;
+    return OK;
 }
 //============================================================================
 
 //============================================================================
-void shft_to_last (List* L) {
+int shft_to_last (List* L) {
+
+    if (L->last == 0)
+        return SPOILT;
+
     L->ptr = L->last;
-    return;
+    return OK;
 }
 //============================================================================
 
 //============================================================================
 int check_empty (List* L) {
-    if ((L->first->nxt == L->last) && (L->last != 0))
+
+    if (L->first->nxt == L->last)
         return EMPTY;
 
-    return NOT_EMPTY;
+        return NOT_EMPTY;
 }
 //============================================================================
 
 //============================================================================
 void list_dtor (List* L) {
+    L->ptr = L->first;
 
-    shft_to_last(L);
-    shft_ptr_prvs(L);
-    while (L->ptr != L->first) {
-        double E = 0;
-        extract(L, &E);
+    while ((L->ptr->nxt != L->last) && (L->ptr->nxt != 0)) {
+        shft_ptr_nxt(L);
+        if (L->ptr->prvs != L->first)
+            free(L->ptr->prvs);
     }
-    L->first=0;
-    L->last =0;
+
+    L->first = 0;
+    L->last = 0;
     return;
 }
 //=============================================================================
-void my_perror (int list_errno) {
-    switch (list_errno) {
-        case ERR_MEM:
-            printf("LIST_ERRNO = %d -- NOT ENOUGH MEMORY. LIST WASN'T CREATED OR CHANGED.\n", list_errno);
-            break;
-        case EMPTY:
-            printf("LIST_ERRNO = %d -- LIST IS EMPTY.\n", list_errno);
-            break;
-        case NOT_EMPTY:
-            printf("LIST_ERRNO = %d -- IS NOT EMPTY, BUT MAY BE IS SPOILED.\n", list_errno);
-            break;
-        case EMPTY_LINK:
-            printf("LIST_ERRNO = %d -- RIGHT OR LEFT BORDER WITH EMPTY LINK WAS ACHIEVED\n", list_errno);
-            break;
-        case ERR_ACCESS:
-            printf("LIST_ERRNO = %d -- CAN'T EXTRACT OR REWRITE FIRST AND LAST ELEMENTS.\n", list_errno);
-            break;
-        default:
-            break;
-    }
-}
+
 

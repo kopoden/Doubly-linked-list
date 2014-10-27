@@ -6,37 +6,29 @@
 int main() {
     List L;
     list_ctor(&L);
-    double res = 0;
 
     printf("%ld - CURRENT\n", L.ptr);
     printf("%ld - FIRST\n", L.first);
     printf("%ld - LAST\n", L.last);
 
-    inp_prvs(&L, 13.2);
-    my_perror(list_errno);
-
     inp_nxt(&L, 13.2);
-    printf("%ld - NEW\n", L.ptr);
-    printf("%ld - NEW\n", L.ptr->nxt);
-    shft_ptr_nxt(&L);
-    printf("%ld - NEW\n", L.ptr);
+    printf("%lg\n", L.ptr->nxt->data);
 
-    extract(&L, &res);
-    printf("%ld - NEW\n", L.ptr);
-    printf("%lg\n", res);
-    my_perror(list_errno);//ok
+    for (long int i = 0; i < 1024*1024*1024/24; i++) { //1GB
+        if (inp_nxt(&L, 13.2) != OK) {
+            printf("ERR_MEM\n");
+            break;
+        }
+    }
+    printf("FIRST END\n");
 
-    extract(&L, &res);
-    printf("%ld - FIRST\n", L.ptr);
-    printf("%lg\n", res);
-    my_perror(list_errno);
-
-    shft_to_last(&L);
-
-    extract(&L, &res);
-    printf("%ld - LAST\n", L.ptr);
-    printf("%lg\n", res);
-    my_perror(list_errno);
+    for (long int i = 0; i < 1024*1024*1024/24; i++) { //2GB
+        if (inp_nxt(&L, 13.2) != OK) {
+            printf("ERR_MEM\n");
+            break;
+        }
+    }
+    printf("SECOND END\n");
 
     list_dtor(&L);
 
